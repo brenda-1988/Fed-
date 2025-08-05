@@ -1,0 +1,152 @@
+; filepath: c:\Users\dijian\Desktop\projects\15-B20030729-黄耿俊-源代码\readme
+# 项目运行说明
+
+本项目为联邦学习相关的实验代码，包含数据集生成、模型训练、结果统计等模块。以下为各主要 Python 文件的运行方法、参数说明及示例。
+
+---
+## 1. 数据集生成
+
+本项目支持自动生成 MNIST、CIFAR10、CIFAR100 等数据集的联邦划分。每个数据集的生成脚本均支持指定数据划分方式（IID/Non-IID）、是否平衡、分区方式等参数。
+
+### 通用命令格式
+
+```bash
+python dataset/generate_mnist.py [noniid|iid] [balance|unbalance] [partition] [dir_alpha]
+python dataset/generate_cifar10.py [noniid|iid] [balance|unbalance] [partition] [dir_alpha]
+python dataset/generate_cifar100.py [noniid|iid] [balance|unbalance] [partition] [dir_alpha]
+```
+
+- 第1个参数：`noniid` 表示非IID划分，`iid` 表示IID划分。
+- 第2个参数：`balance` 表示每个客户端样本数均衡，`unbalance` 表示不均衡。
+- 第3个参数：`partition` 可选，指定分区方式（如 `dirichlet`、`shards` 等，若无则填 `-`）。
+- 第4个参数：`dir_alpha` 可选，仅当分区方式为 `dirichlet` 时生效，指定 Dirichlet 分布的 alpha 参数（如 0.5、1.0、10.0 等，数值越小异质性越强）。
+
+### 参数说明
+
+| 参数位置 | 取值            | 说明                                       |
+|----------|----------------|--------------------------------------------|
+| 1        | noniid / iid   | 是否为非IID划分（noniid为非IID，iid为IID）  |
+| 2        | balance / unbalance | 是否为均衡划分（balance为均衡，unbalance为不均衡） |
+| 3        | 分区方式或“-”   | 可选，指定分区算法（如 dirichlet、shards），不指定则填“-” |
+| 4        | 数值（如0.5）   | 可选，仅对dirichlet分区有效，指定alpha参数   |
+
+### 运行示例
+
+#### 生成 MNIST 非IID、均衡、Dirichlet 分区，alpha=0.5 的数据
+
+```bash
+python dataset/generate_mnist.py noniid balance dirichlet 0.5
+```
+
+#### 生成 CIFAR10 IID、不均衡、默认分区的数据
+
+```bash
+python dataset/generate_cifar10.py iid unbalance -
+```
+
+#### 生成 CIFAR100 非IID、不均衡、shards分区的数据
+
+```bash
+python dataset/generate_cifar100.py noniid unbalance shards
+```
+
+#### 生成 CIFAR10 非IID、均衡、Dirichlet 分区，alpha=10 的数据
+
+```bash
+python dataset/generate_cifar10.py noniid balance dirichlet 10
+```
+
+---
+
+## 2. 联邦学习主程序
+
+### 运行主训练脚本
+
+```bash
+python system/main.py [参数]
+```
+
+### 常用参数说明
+
+| 参数名 | 命令行参数 | 类型 | 默认值 | 说明 |
+| ------ | ---------- | ---- | ------ | ---- |
+| 算法 | `-algo`/`--algorithm` | str | FedPT | 联邦算法名称（FedPT, FedPT_GL, FedPT_LL） |
+| 数据集 | `-data`/`--dataset` | str | mnist | 数据集名称（mnist, Cifar10, Cifar100） |
+| 客户端数 | `-nc`/`--num_clients` | int | 20 | 客户端总数 |
+| 参与比例 | `-jr`/`--join_ratio` | float | 1.0 | 每轮参与训练的客户端比例 |
+| 轮数 | `-gr`/`--global_rounds` | int | 500 | 全局训练轮数 |
+| 本地轮数 | `-ls`/`--local_epochs` | int | 1 | 每轮本地训练 epoch 数 |
+| 批大小 | `-lbs`/`--batch_size` | int | 10 | 本地训练批大小 |
+| 模型 | `-m`/`--model` | str | cnn | 模型类型（cnn, mlr, resnet, resnet10, resnet34） |
+| 类别数 | `-nb`/`--num_classes` | int | 10 | 分类类别数 |
+| 全局学习率 | `-glr`/`--global_learning_rate` | float | 0.01 | 全局优化器学习率 |
+| 本地学习率 | `-llr`/`--local_learning_rate` | float | 0.005 | 本地优化器学习率 |
+| 学习率衰减 | `-ld`/`--learning_rate_decay` | bool | False | 是否使用学习率衰减 |
+| 衰减系数 | `-ldg`/`--learning_rate_decay_gamma` | float | 0.99 | 学习率衰减系数 |
+| 设备 | `-dev`/`--device` | str | cuda | 训练设备（cpu/cuda） |
+| 设备ID | `-did`/`--device_id` | str | 0 | CUDA 设备编号 |
+| 差分隐私 | `-dp`/`--privacy` | bool | False | 是否开启差分隐私 |
+| DP噪声 | `-dps`/`--dp_sigma` | float | 0.0 | 差分隐私噪声系数 |
+| 评估间隔 | `-eg`/`--eval_gap` | int | 1 | 评估间隔轮数 |
+| 客户端丢弃率 | `-cdr`/`--client_drop_rate` | float | 0.0 | 客户端丢弃率 |
+| 训练慢客户端比例 | `-tsr`/`--train_slow_rate` | float | 0.0 | 训练慢客户端比例 |
+| 通信慢客户端比例 | `-ssr`/`--send_slow_rate` | float | 0.0 | 通信慢客户端比例 |
+| 慢客户端阈值 | `-tth`/`--time_threthold` | float | 10000 | 慢客户端时间阈值 |
+| DLG攻击评估 | `-dlg`/`--dlg_eval` | bool | False | 是否进行DLG攻击评估 |
+| DLG评估间隔 | `-dlgg`/`--dlg_gap` | int | 100 | DLG攻击评估间隔 |
+
+
+### 运行示例
+
+#### 运行FedPT算法，使用MNIST数据集，20个客户端，500轮，每轮全部参与，模型为cnn：
+
+```bash
+python system/main.py -algo FedPT -data mnist -nc 20 -gr 500 -jr 1.0 -m cnn -nb 10 -dev cuda -did 0
+```
+
+#### 运行FedPT_GL算法，使用Cifar10，10个客户端，部分参数自定义：
+
+```bash
+python system/main.py -algo FedPT_GL -data Cifar10 -nc 10 -gr 200 -jr 0.5 -m resnet -nb 10 -dev cuda -did 0 -glr 0.005
+```
+
+#### 开启差分隐私训练：
+
+```bash
+python system/main.py -dp True -dps 1.0
+```
+
+#### 仅用CPU训练：
+
+```bash
+python system/main.py -dev cpu
+```
+
+---
+
+## 3. 结果统计与分析
+
+### 统计多次实验的平均和标准差
+
+```bash
+python system/get_mean_std.py
+```
+运行后输入结果文件名前缀（如 `mnist_FedPT_test`），程序会自动读取 `mnist_FedPT_test.out` 文件并输出所有实验的平均和标准差。
+
+---
+
+## 4. 其它工具
+
+- `system/utils/result_utils.py`：用于统计和分析实验结果（如平均准确率、标准差等）。
+- `system/utils/mem_utils.py`：用于内存占用分析。
+- `system/utils/privacy.py`：差分隐私相关工具。
+- `system/utils/dlg.py`：DLG攻击相关工具。
+
+---
+
+## 5. 可视化
+
+- `system/tmp.py`：使用 graphviz 绘制联邦学习流程图，运行后会生成 `federated_learning.pdf`。
+
+---
+
