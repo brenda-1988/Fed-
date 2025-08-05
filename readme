@@ -1,4 +1,4 @@
-; filepath: c:\Users\dijian\Desktop\projects\15-B20030729-黄耿俊-源代码\readme
+readme
 # 项目运行说明
 
 本项目为联邦学习相关的实验代码，包含数据集生成、模型训练、结果统计等模块。以下为各主要 Python 文件的运行方法、参数说明及示例。
@@ -149,4 +149,5 @@ python system/get_mean_std.py
 - `system/tmp.py`：使用 graphviz 绘制联邦学习流程图，运行后会生成 `federated_learning.pdf`。
 
 ---
+
 
